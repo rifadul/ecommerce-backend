@@ -152,7 +152,8 @@ CORS_ALLOWED_ORIGINS = [
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
-
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
 # Rest Framework settings
 REST_FRAMEWORK = {
@@ -191,5 +192,4 @@ LOGGING = {
 
 # Ensure the logs directory exists
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
-
 

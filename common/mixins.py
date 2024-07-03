@@ -1,10 +1,9 @@
-# shop/mixins.py
 from rest_framework.response import Response
 from rest_framework import status
 
 class SuccessMessageMixin:
     """
-    Mixin to add dynamic success messages for create, update, and delete actions.
+    Mixin to add dynamic success messages for create, update, delete, and read actions.
     """
 
     def get_model_name(self):
@@ -40,4 +39,26 @@ class SuccessMessageMixin:
         return Response(
             {"message": f"{model_name.capitalize()} deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        model_name = self.get_model_name()
+        return Response(
+            {"message": f"{model_name.capitalize()} retrieved successfully", "data": serializer.data}
+        )
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        model_name = self.get_model_name()
+        return Response(
+            {"message": f"{model_name.capitalize()} list retrieved successfully", "data": serializer.data}
         )
