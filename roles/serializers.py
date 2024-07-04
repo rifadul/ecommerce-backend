@@ -5,7 +5,7 @@ from .models import Module, Permission, Role
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
-        fields = ['id','name','codename']
+        fields = ['id','name','codename', 'module']
         # fields = '__all__'
 
     def validate_name(self,value):
