@@ -106,7 +106,7 @@ Open your web browser and go to http://127.0.0.1:8000/ to access the application
 - Update Role: PUT /api/roles/{id}/
 - Partial Update Role: PATCH /api/roles/{id}/
 - Delete Role: DELETE /api/roles/{id}/
-- Bulk Delete Roles: POST /api/roles/delete-multiple/?ids=id1,id2,id2...
+- Multiple Roles Delete : POST /api/roles/delete-multiple/?ids=id1,id2,id2...
 
 
 ## Example Requests
@@ -142,16 +142,6 @@ Content-Type: application/json
 {
     "name": "Admin",
     "permissions": ["{permission_id1}", "{permission_id2}"]
-}
-```
-
-### Bulk Delete Roles
-``` sh
-POST /api/roles/delete-multiple/
-Content-Type: application/json
-
-{
-    "ids": ["{role_id1}", "{role_id2}"]
 }
 ```
 
