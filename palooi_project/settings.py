@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # our own apps
+    'roles'
 ]
 
 MIDDLEWARE = [
