@@ -50,7 +50,8 @@ class RoleSerializer(serializers.ModelSerializer):
     permissions_display = serializers.SerializerMethodField()
     class Meta:
         model = Role
-        fields = '__all__'
+        fields = ['id','name','permissions','permissions_display','created_at','updated_at']
+        # fields = '__all__'
 
 
     def validate_name(self,value):
