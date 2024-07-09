@@ -12,7 +12,6 @@ class PermissionSerializer(serializers.ModelSerializer):
         """
         Check that the permission name is unique.
         """
-        print('valaue',value)
 
         if Permission.objects.filter(name=value).exists():
             raise serializers.ValidationError("A permission with this name already exists.")

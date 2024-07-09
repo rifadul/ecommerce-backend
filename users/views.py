@@ -70,7 +70,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def forget_password(self, request, *args, **kwargs):
         email = request.data.get('email')
         user = User.objects.filter(email=email).first()
-        print('user',user)
 
         if user:
             # Generate a password reset token
