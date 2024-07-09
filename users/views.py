@@ -7,6 +7,11 @@ from .serializers import UserCreateSerializer, UserSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
+import environ
+
+# Initialize environment variables
+env = environ.Env()
+environ.Env.read_env()
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -65,22 +70,15 @@ class UserViewSet(viewsets.ModelViewSet):
     def forget_password(self, request, *args, **kwargs):
         email = request.data.get('email')
         user = User.objects.filter(email=email).first()
+        print('user',user)
 
         if user:
             # Generate a password reset token
             reset_token = get_random_string(20)
             user.reset_token = reset_token
             user.save()
-            print(f'Use the following token to reset your password: {reset_token}')
-
-            # Send the reset token to the user's email
-            # send_mail(
-            #     'Password Reset Request',
-            #     f'Use the following token to reset your password: {reset_token}',
-            #     'your_email@example.com',
-            #     [user.email],
-            #     fail_silently=False,
-            # )
+            # print(f'Use the following token to reset your password: {reset_token}')
+            send_password_reset_email(user, reset_token)
             
             return Response({'status': 'Check your email for the password reset token'}, status=status.HTTP_200_OK)
         
@@ -120,3 +118,13 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"message": "No user found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
         
         return Response({"message": f"User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+def send_password_reset_email(user, reset_token):
+    send_mail(
+        'Password Reset Request',
+        f'Use the following token to reset your password: {reset_token}',
+        env('EMAIL_HOST_USER'),
+        [user.email],
+        fail_silently=False,
+    )
