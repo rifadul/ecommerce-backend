@@ -34,6 +34,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     role = models.ForeignKey(Role, on_delete=models.CASCADE, null=True)  # Replace 'Role' with your actual role model name
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    reset_token = models.CharField(max_length=20, blank=True, null=True)
 
     objects = UserManager()
 

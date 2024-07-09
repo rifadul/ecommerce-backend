@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from roles.serializers import RoleSerializer
 from .models import User
 from phonenumber_field.serializerfields import PhoneNumberField
 
@@ -24,6 +26,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return user
 
 class UserSerializer(serializers.ModelSerializer):
+    role = RoleSerializer()
     phone_number = PhoneNumberField()
 
     class Meta:

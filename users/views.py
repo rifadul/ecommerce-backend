@@ -5,17 +5,15 @@ from rest_framework.decorators import action
 from .models import User
 from .serializers import UserCreateSerializer, UserSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
-import random
-import string
+from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
-
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
     def get_permissions(self):
-        if self.action in ['register', 'login', 'reset_password']:
+        if self.action in ['register', 'login', 'forget_password', 'reset_password_with_token']:
             self.permission_classes = [AllowAny]
         else:
             self.permission_classes = [IsAuthenticated]
@@ -29,7 +27,7 @@ class UserViewSet(viewsets.ModelViewSet):
             refresh = RefreshToken.for_user(user)
             return Response({
                 'refresh': str(refresh),
-                'access': str(refresh.access_token),
+                'access': str(refresh.access_token)
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -44,43 +42,81 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
+                'user': UserSerializer(user).data
             }, status=status.HTTP_200_OK)
         
         return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-
+    
     @action(detail=False, methods=['post'])
     def change_password(self, request, *args, **kwargs):
         user = self.request.user
-        password = request.data.get('password')
+        current_password = request.data.get('old_password')
         new_password = request.data.get('new_password')
 
-        if not user.check_password(password):
+        if not user.check_password(current_password):
             return Response({'error': 'Current password is incorrect'}, status=status.HTTP_400_BAD_REQUEST)
         
         user.set_password(new_password)
         user.save()
-        return Response({'status': 'password set'}, status=status.HTTP_200_OK)
+        return Response({'status': 'Password has been set'}, status=status.HTTP_200_OK)
+
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def reset_password(self, request, *args, **kwargs):
+    def forget_password(self, request, *args, **kwargs):
         email = request.data.get('email')
         user = User.objects.filter(email=email).first()
 
         if user:
-            # Generate a temporary password or reset link
-            temporary_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-            user.set_password(temporary_password)
+            # Generate a password reset token
+            reset_token = get_random_string(20)
+            user.reset_token = reset_token
             user.save()
+            print(f'Use the following token to reset your password: {reset_token}')
+
+            # Send the reset token to the user's email
+            # send_mail(
+            #     'Password Reset Request',
+            #     f'Use the following token to reset your password: {reset_token}',
+            #     'your_email@example.com',
+            #     [user.email],
+            #     fail_silently=False,
+            # )
             
-            # Send the temporary password to the user's email
-            send_mail(
-                'Password Reset Request',
-                f'Your temporary password is {temporary_password}',
-                'rifadul1618@gmail.com',
-                [user.email],
-                fail_silently=False,
-            )
-            
-            return Response({'status': 'Check your email for the temporary password'}, status=status.HTTP_200_OK)
+            return Response({'status': 'Check your email for the password reset token'}, status=status.HTTP_200_OK)
         
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    def reset_password_with_token(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        reset_token = request.data.get('reset_token')
+        new_password = request.data.get('new_password')
+        user = User.objects.filter(email=email, reset_token=reset_token).first()
+
+        if user:
+            user.set_password(new_password)
+            user.reset_token = ''  # Clear the reset token after successful password reset
+            user.save()
+            return Response({'status': 'Password has been reset'}, status=status.HTTP_200_OK)
+        
+        return Response({'error': 'Invalid token or email'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['delete'], url_path='delete-multiple')
+    def delete_multiple(self, request):
+        """
+        Custom action to handle multiple deletion of roles.
+        This action expects a list of role IDs as query parameters.
+        Example request: DELETE /api/users/delete-multiple/?ids=uuid1,uuid2,uuid3
+        """
+        ids = request.query_params.get('ids')
+        if not ids:
+            return Response({"message": "No IDs provided."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        ids_list = ids.split(',')
+        roles = User.objects.filter(id__in=ids_list)
+        count, _ = roles.delete()
+        
+        if count == 0:
+            return Response({"message": "No user found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
+        
+        return Response({"message": f"User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
