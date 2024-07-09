@@ -25,6 +25,7 @@ venv.bak/
 
 # Virtual environment
 palooi_venv/
+palooi_venv1/
 
 # Installers
 *.egg
