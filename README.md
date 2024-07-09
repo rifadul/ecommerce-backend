@@ -34,7 +34,7 @@ source palooi_venv/bin/activate  # On Windows use `venv\Scripts\activate`
 
 ```
 
-### deactivate Virtual Environment
+### Deactivate Virtual Environment
 
 ```sh
 deactivate
