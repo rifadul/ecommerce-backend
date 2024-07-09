@@ -4,18 +4,18 @@ This is a Django-based web application designed to manage roles, permissions, an
 
 ## Features
 
-- Authentication for CRUD operations
-- Role-based access control
-- Nested serializers to include related data
-- Bulk deletion of roles
-- Search functionality for roles and permissions
+-   Authentication for CRUD operations
+-   Role-based access control
+-   Nested serializers to include related data
+-   Bulk deletion of roles
+-   Search functionality for roles and permissions
 
 ## Requirements
 
-- Python 3.x
-- Django 3.x or higher
-- Django REST framework
-- PostgreSQL (or any other preferred database)
+-   Python 3.x
+-   Django 3.x or higher
+-   Django REST framework
+-   PostgreSQL (or any other preferred database)
 
 ## Setup Instructions
 
@@ -27,24 +27,35 @@ cd palooi_project
 ```
 
 ### Create and Activate Virtual Environment
+
 ```sh
-python -m venv palooi_venv
+python3 -m venv palooi_venv
 source palooi_venv/bin/activate  # On Windows use `venv\Scripts\activate`
 
 ```
 
+### deactivate Virtual Environment
+
+```sh
+deactivate
+
+```
+
 ### Creating the requirements.txt File
-``` sh
+
+```sh
 pip freeze > requirements.txt
 
 ```
 
 ### Install Dependencies
-``` sh
+
+```sh
 pip install -r requirements.txt
 ```
 
 ### Creating env file with name .env
+
 ```sh
 DJANGO_SECRET_KEY=your-secret-key
 DJANGO_DEBUG=True/False
@@ -56,63 +67,68 @@ DB_PORT=5432
 DJANGO_ALLOWED_HOSTS=localhost,your_domain
 ```
 
-
 ### Configure Database
+
 Update the DATABASES setting in palooi_project/settings.py with your database credentials.
 
 ### Run Migrations
+
 ```sh
-python manage.py makemigrations
-python manage.py migrate
+python3 manage.py makemigrations
+python3 manage.py migrate
 
 ```
 
 ### Create Superuser
+
 ```sh
-python manage.py createsuperuser
+python3 manage.py createsuperuser
 ```
 
 ### Run the Development Server
+
 ```sh
-python manage.py runserver
+python3 manage.py runserver
 
 ```
 
 ### Access the Application
+
 Open your web browser and go to http://127.0.0.1:8000/ to access the application.
 
 ### API Endpoints
 
-- List Modules: GET /api/modules/
-- Create Module: POST /api/modules/
-- Retrieve Module: GET /api/modules/{id}/
-- Update Module: PUT /api/modules/{id}/
-- Partial Update Module: PATCH /api/modules/{id}/
-- Delete Module: DELETE /api/modules/{id}/
+-   List Modules: GET /api/modules/
+-   Create Module: POST /api/modules/
+-   Retrieve Module: GET /api/modules/{id}/
+-   Update Module: PUT /api/modules/{id}/
+-   Partial Update Module: PATCH /api/modules/{id}/
+-   Delete Module: DELETE /api/modules/{id}/
 
 ### Permissions
 
-- List Permissions: GET /api/permissions/
-- Create Permission: POST /api/permissions/
-- Retrieve Permission: GET /api/permissions/{id}/
-- Update Permission: PUT /api/permissions/{id}/
-- Partial Update Permission: PATCH /api/permissions/{id}/
-- Delete Permission: DELETE /api/permissions/{id}/
+-   List Permissions: GET /api/permissions/
+-   Create Permission: POST /api/permissions/
+-   Retrieve Permission: GET /api/permissions/{id}/
+-   Update Permission: PUT /api/permissions/{id}/
+-   Partial Update Permission: PATCH /api/permissions/{id}/
+-   Delete Permission: DELETE /api/permissions/{id}/
 
 ### Roles
-- List Roles: GET /api/roles/
-- Create Role: POST /api/roles/
-- Retrieve Role: GET /api/roles/{id}/
-- Update Role: PUT /api/roles/{id}/
-- Partial Update Role: PATCH /api/roles/{id}/
-- Delete Role: DELETE /api/roles/{id}/
-- Multiple Roles Delete : POST /api/roles/delete-multiple/?ids=id1,id2,id2...
 
+-   List Roles: GET /api/roles/
+-   Create Role: POST /api/roles/
+-   Retrieve Role: GET /api/roles/{id}/
+-   Update Role: PUT /api/roles/{id}/
+-   Partial Update Role: PATCH /api/roles/{id}/
+-   Delete Role: DELETE /api/roles/{id}/
+-   Multiple Roles Delete : POST /api/roles/delete-multiple/?ids=id1,id2,id2...
 
 ## Example Requests
 
 ### Create a Module
-``` sh
+
+```sh
 POST /api/modules/
 Content-Type: application/json
 
@@ -122,7 +138,8 @@ Content-Type: application/json
 ```
 
 ### Create a Permission
-``` sh
+
+```sh
 POST /api/permissions/
 Content-Type: application/json
 
@@ -133,9 +150,9 @@ Content-Type: application/json
 }
 ```
 
-
 ### Create a Role
-``` sh
+
+```sh
 POST /api/roles/
 Content-Type: application/json
 
@@ -144,4 +161,3 @@ Content-Type: application/json
     "permissions": ["{permission_id1}", "{permission_id2}"]
 }
 ```
-
