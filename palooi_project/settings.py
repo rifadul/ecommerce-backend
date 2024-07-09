@@ -57,7 +57,8 @@ INSTALLED_APPS = [
 
     # our own apps
     'roles',
-    'users'
+    'users',
+    'banners'
 ]
 
 
