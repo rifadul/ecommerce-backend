@@ -8,6 +8,8 @@ class ProductVariantInline(admin.TabularInline):
     model = ProductVariant
     extra = 1
     form = ProductVariantInlineForm
+    fields = ['quantity', 'color', 'size', 'image', 'in_stock']
+    readonly_fields = ['in_stock']
 
 class ProductSizeGuideInline(admin.TabularInline):
     model = ProductSizeGuide
