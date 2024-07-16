@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/', include('banners.urls')),
     path('api/', include('categories.urls')),
     path('api/', include('products.urls')),
+    path('api/', include('cart.urls')),
     path('tinymce/', include('tinymce.urls')),
 ]
 

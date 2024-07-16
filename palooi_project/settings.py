@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'phonenumber_field',
     'django_filters',
+    'tinymce',
+    'colorfield',
 
     # our own apps
     'roles',
@@ -62,7 +64,8 @@ INSTALLED_APPS = [
     'banners',
     'categories',
     'products',
-    'tinymce'
+    'cart'
+    
 ]
 
 
@@ -228,7 +231,7 @@ SIMPLE_JWT = {
     # 'USER_ID_CLAIM': 'user_id',
 
     # new config
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Adjust according to your needs
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1440),  # Adjust according to your needs
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,

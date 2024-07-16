@@ -6,6 +6,8 @@ from categories.models import Category
 from common.model import BaseModel
 from tinymce.models import HTMLField
 from PIL import Image, UnidentifiedImageError
+from colorfield.fields import ColorField  # Import ColorField
+
 
 
 def validate_image(image):
@@ -17,6 +19,13 @@ def validate_image(image):
             raise ValidationError(f"Unsupported image format: {img_format}. Supported formats: {', '.join(valid_image_formats)}")
     except UnidentifiedImageError:
         raise ValidationError("Invalid image file")
+
+class Size(BaseModel):  # Add Size model
+    size = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.size
+
 
 
 class Product(BaseModel):
@@ -48,8 +57,10 @@ class Product(BaseModel):
 class ProductVariant(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
     quantity = models.PositiveIntegerField(default=0)
-    color = models.CharField(max_length=50)
-    size = models.CharField(max_length=50)
+    size = models.ForeignKey(Size, on_delete=models.CASCADE, related_name='variants')  # ForeignKey to Size model
+    color = ColorField(default='#FFFFFF')  # Use ColorField for color
+    # color = models.CharField(max_length=50)
+    # size = models.CharField(max_length=50)
     image = models.ImageField(upload_to='products/variants/', validators=[validate_image],help_text="Supported formats: JPEG, JPG, PNG, GIF, BMP, TIFF, WEBP")
     in_stock = models.BooleanField(default=True, editable=False)  # Automatically managed field
 
@@ -63,7 +74,8 @@ class ProductVariant(BaseModel):
 
 class ProductSizeGuide(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='size_guides')
-    size = models.CharField(max_length=50)
+    size = models.ForeignKey(Size, on_delete=models.CASCADE, related_name='size_guides')
+    # size = models.CharField(max_length=50)
     chest = models.DecimalField(max_digits=5, decimal_places=2)
     length = models.DecimalField(max_digits=5, decimal_places=2)
     sleeve = models.DecimalField(max_digits=5, decimal_places=2)
