@@ -2,6 +2,7 @@
 from rest_framework import viewsets, filters, status
 from common.mixins import SuccessMessageMixin
 from django_filters.rest_framework import DjangoFilterBackend
+from products.filters.filters import ProductFilter
 from .models import Product
 from .serializers import ProductSerializer
 from rest_framework.decorators import action
@@ -11,7 +12,7 @@ class ProductViewSet(SuccessMessageMixin,viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category', 'price']
+    filterset_class = ProductFilter  # Use the custom filter set
     search_fields = ['name', 'description']
     ordering_fields = ['price', 'name', 'sku']
 
