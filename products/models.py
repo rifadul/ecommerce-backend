@@ -33,6 +33,10 @@ class Product(BaseModel):
     weight = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     depth = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
 
+    @property
+    def in_stock(self):
+        return any(variant.quantity > 0 for variant in self.variants.all())
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
