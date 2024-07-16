@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'django_filters',
     'tinymce',
+    'colorfield',
 
     # our own apps
     'roles',

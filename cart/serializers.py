@@ -4,7 +4,7 @@ from rest_framework import serializers
 from categories.serializers import CategorySerializer
 from products.models import Product, ProductVariant
 from .models import Cart, CartItem
-from products.serializers import ProductImageSerializer, ProductVariantSerializer
+from products.serializers import ProductImageSerializer, ProductVariantSerializer, SizeSerializer
 
 
 class CartProductSerializer(serializers.ModelSerializer):
@@ -22,6 +22,7 @@ class CartProductSerializer(serializers.ModelSerializer):
 class CartProductVariantSerializer(serializers.ModelSerializer):
     product = CartProductSerializer(read_only=True)  # Include the limited product serializer for cart
     in_stock = serializers.ReadOnlyField()
+    size = SizeSerializer()
 
     class Meta:
         model = ProductVariant

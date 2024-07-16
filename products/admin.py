@@ -1,7 +1,7 @@
 # products/admin.py
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import  Product, ProductVariant, ProductSizeGuide, ProductImage
+from .models import  Product, ProductVariant, ProductSizeGuide, ProductImage, Size
 from .forms import ProductAdminForm, ProductVariantInlineForm, ProductSizeGuideInlineForm
 
 class ProductVariantInline(admin.TabularInline):
@@ -59,5 +59,11 @@ class ProductAdmin(admin.ModelAdmin):
 
     prepopulated_fields = {'slug': ('name',)}
 
+
+
+
+@admin.register(Size)
+class SizeAdmin(admin.ModelAdmin):
+    list_display = ['size']
 
 admin.site.register(Product, ProductAdmin)
