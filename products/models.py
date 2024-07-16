@@ -47,11 +47,17 @@ class Product(BaseModel):
 
 class ProductVariant(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
-    quantity = models.PositiveIntegerField()
+    quantity = models.PositiveIntegerField(default=0)
     color = models.CharField(max_length=50)
     size = models.CharField(max_length=50)
     image = models.ImageField(upload_to='products/variants/', validators=[validate_image],help_text="Supported formats: JPEG, JPG, PNG, GIF, BMP, TIFF, WEBP")
+    in_stock = models.BooleanField(default=True, editable=False)  # Automatically managed field
 
+    def save(self, *args, **kwargs):
+        # Automatically set in_stock based on quantity
+        self.in_stock = self.quantity > 0
+        super().save(*args, **kwargs)
+        
     def __str__(self):
         return f"{self.product.name} - {self.color} - {self.size}"
 

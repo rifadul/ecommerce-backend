@@ -14,7 +14,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 class ProductVariantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
-        fields = ['id', 'quantity', 'color', 'size', 'image']
+        fields = ['id', 'quantity', 'color', 'size', 'image','in_stock']
 
 class ProductSizeGuideSerializer(serializers.ModelSerializer):
     class Meta:
