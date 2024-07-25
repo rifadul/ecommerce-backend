@@ -19,7 +19,7 @@ class CartItem(BaseModel):
         unique_together = ('cart', 'product_variant')
 
     def __str__(self):
-        return f"CartItem({self.product_variant.product.name}, {self.product_variant.color}, {self.product_variant.size}, quantity: {self.quantity})"
+        return f"{self.product_variant.product.name}, color: {self.product_variant.color}, size: {self.product_variant.size}, quantity: {self.quantity}"
 
     @property
     def total_price(self):
