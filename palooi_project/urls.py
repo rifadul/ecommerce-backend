@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/', include('products.urls')),
     path('api/', include('cart.urls')),
     path('api/', include('coupons.urls')),
+    path('api/', include('wishlists.urls')),
     path('tinymce/', include('tinymce.urls')),
 ]
 
