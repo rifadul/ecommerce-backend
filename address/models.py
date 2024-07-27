@@ -14,6 +14,11 @@ class Address(BaseModel):
     address = models.TextField(max_length=255)
     defaultAddress = models.BooleanField(default=False)
 
+    def save(self, *args, **kwargs):
+        if self.defaultAddress:
+            Address.objects.filter(user=self.user, defaultAddress=True).update(defaultAddress=False)
+        super().save(*args, **kwargs)
+
 
     def __str__(self):
         return f"Address of {self.name}"
