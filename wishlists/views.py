@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from common.mixins import SuccessMessageMixin
+from common.multipleDelete import delete_multiple
 from .serializers import WishListSerializer
 from .models import WishList
 
