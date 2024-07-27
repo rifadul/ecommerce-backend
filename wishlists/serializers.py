@@ -1,20 +1,23 @@
 # wishlist/serializers.py
 from rest_framework import serializers
-from .models import Wishlist, WishlistItem
-from products.serializers import ProductVariantSerializer, ProductSerializer
 
-class WishlistItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)
-    # product_variant_id = serializers.PrimaryKeyRelatedField(queryset=ProductVariant.objects.all(), source='product_variant', write_only=True)
+from products.models import Product
+from .models import WishList
+from products.serializers import ProductSerializer
 
-    class Meta:
-        model = WishlistItem
-        fields = '__all__'
-        # fields = ['id', 'product_variant', 'product_variant_id']
+class WishListSerializer(serializers.ModelSerializer):
+     product = ProductSerializer(read_only=True)
+     product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True, source='product')
+     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
-class WishlistSerializer(serializers.ModelSerializer):
-    items = WishlistItemSerializer(many=True, read_only=True)
+     class Meta:
+        model = WishList
+        fields = ['id', 'user', 'product', 'product_id', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at']
 
-    class Meta:
-        model = Wishlist
-        fields = ['id', 'items']
+     def validate(self, data):
+         user = self.context['request'].user
+         product = data.get('product')
+         if WishList.objects.filter(user=user, product=product).exists():
+               raise serializers.ValidationError("This product is already in your wishlist.")
+         return data

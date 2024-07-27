@@ -1,16 +1,8 @@
 # wishlist/admin.py
 from django.contrib import admin
-from .models import Wishlist, WishlistItem
+from .models import WishList
 
-class WishlistItemInline(admin.TabularInline):
-    model = WishlistItem
-    extra = 1
 
-@admin.register(Wishlist)
-class WishlistAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user')
-    inlines = [WishlistItemInline]
-
-@admin.register(WishlistItem)
-class WishlistItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'wishlist', 'product')
+@admin.register(WishList)
+class WishListAdmin(admin.ModelAdmin):
+    list_display = ('user','product')
