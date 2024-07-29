@@ -117,6 +117,14 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'NAME': 'palooidb',  # Replace with the actual database name
+    #     'USER': 'staging_remote',
+    #     'PASSWORD': 'Staging@Java#Zaag24@M',
+    #     'HOST': '146.190.98.103',
+    #     'PORT': '3306',
+    # }
 }
 
 

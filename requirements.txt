@@ -1,5 +1,6 @@
 asgiref==3.8.1
 async-timeout==4.0.3
+configparser==7.0.0
 dj-database-url==2.2.0
 Django==5.0.6
 django-allauth==0.63.3
@@ -17,6 +18,8 @@ djangorestframework-simplejwt==5.3.1
 ez_setup==0.9
 funcy==2.0
 gunicorn==22.0.0
+mysql-connector-python==9.0.0
+mysqlclient==2.1.1
 packaging==24.1
 phonenumbers==8.13.40
 pillow==10.4.0
