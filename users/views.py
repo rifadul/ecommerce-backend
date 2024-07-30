@@ -117,6 +117,12 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"message": "No user found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
         
         return Response({"message": f"User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def profile(self, request, *args, **kwargs):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 def send_password_reset_email(user, reset_token):
