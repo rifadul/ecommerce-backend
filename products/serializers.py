@@ -100,8 +100,6 @@ class ProductSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Product size guides are required.")
         if not data.get('images'):
             raise serializers.ValidationError("At least one product image is required.")
-        
-        print('data.get(images)',data.get('images'))
         return data
 
 

@@ -8,9 +8,9 @@ class AddressSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         user = self.context['request'].user
-        name = data.get('name')
-        if Address.objects.filter(user=user, name=name).exists():
-            raise serializers.ValidationError(f"Address with name '{name}' already exists in your address list.")
+        # name = data.get('name')
+        # if Address.objects.filter(user=user, name=name).exists():
+        #     raise serializers.ValidationError(f"Address with name '{name}' already exists in your address list.")
         return data       
 
     def create(self, validated_data):
