@@ -31,3 +31,9 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'phone_number', 'first_name', 'last_name', 'image', 'role']
+
+
+class UserImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['image']
