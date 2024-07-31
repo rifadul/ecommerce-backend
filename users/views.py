@@ -21,7 +21,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     def get_permissions(self):
-        if self.action in ['register', 'login', 'forget_password', 'reset_password_with_token']:
+        if self.action in ['register', 'login', 'forget_password', 'reset_password_with_otp']:
             self.permission_classes = [AllowAny]
         else:
             self.permission_classes = [IsAuthenticated]
@@ -68,53 +68,55 @@ class UserViewSet(viewsets.ModelViewSet):
         user.save()
         return Response({'status': 'Password has been set'}, status=status.HTTP_200_OK)
 
-
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def forget_password(self, request, *args, **kwargs):
         email = request.data.get('email')
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response({'error': 'Invalid email format'}, status=status.HTTP_400_BAD_REQUEST)
+
         user = User.objects.filter(email=email).first()
 
         if user:
-            # Generate a password reset token
-            reset_token = get_random_string(20)
-            user.reset_token = reset_token
+            otp = get_random_string(6, allowed_chars='0123456789')
+            user.email_otp = otp
             user.save()
-            # print(f'Use the following token to reset your password: {reset_token}')
-            send_password_reset_email(user, reset_token)
-
-            return Response({'status': 'Check your email for the password reset token'}, status=status.HTTP_200_OK)
+            send_mail(
+                'Password Reset OTP',
+                f'Your OTP for resetting your password is {otp}',
+                env('EMAIL_HOST_USER'),
+                [user.email],
+                fail_silently=False,
+            )
+            return Response({'status': 'OTP sent to registered email'}, status=status.HTTP_200_OK)
 
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def reset_password_with_token(self, request, *args, **kwargs):
+    def reset_password_with_otp(self, request, *args, **kwargs):
         email = request.data.get('email')
-        reset_token = request.data.get('reset_token')
+        otp = request.data.get('otp')
         new_password = request.data.get('new_password')
-        user = User.objects.filter(email=email, reset_token=reset_token).first()
+        user = User.objects.filter(email=email, email_otp=otp).first()
 
         if user:
             user.set_password(new_password)
-            user.reset_token = ''  # Clear the reset token after successful password reset
+            user.email_otp = ''  # Clear the OTP after successful password reset
             user.save()
             return Response({'status': 'Password has been reset'}, status=status.HTTP_200_OK)
 
-        return Response({'error': 'Invalid token or email'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid OTP or email'}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['delete'], url_path='delete-multiple')
     def delete_multiple(self, request):
-        """
-        Custom action to handle multiple deletion of roles.
-        This action expects a list of role IDs as query parameters.
-        Example request: DELETE /api/users/delete-multiple/?ids=uuid1,uuid2,uuid3
-        """
         ids = request.query_params.get('ids')
         if not ids:
             return Response({"message": "No IDs provided."}, status=status.HTTP_400_BAD_REQUEST)
 
         ids_list = ids.split(',')
-        roles = User.objects.filter(id__in=ids_list)
-        count, _ = roles.delete()
+        users = User.objects.filter(id__in=ids_list)
+        count, _ = users.delete()
 
         if count == 0:
             return Response({"message": "No user found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
@@ -174,7 +176,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
         
         if str(user.phone_number) != existing_phone:
-            return Response({'error': 'Invalid current  phone number'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Invalid current phone number'}, status=status.HTTP_400_BAD_REQUEST)
 
         new_phone_number = to_python(new_phone)
         if not new_phone_number.is_valid():
@@ -262,13 +264,3 @@ class UserViewSet(viewsets.ModelViewSet):
         
         else:
             return Response({'error': 'Invalid OTP type'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-def send_password_reset_email(user, reset_token):
-    send_mail(
-        'Password Reset Request',
-        f'Use the following token to reset your password: {reset_token}',
-        env('EMAIL_HOST_USER'),
-        [user.email],
-        fail_silently=False,
-    )
