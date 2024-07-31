@@ -8,6 +8,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 import environ
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from phonenumber_field.phonenumber import to_python
 
 # Initialize environment variables
 env = environ.Env()
@@ -131,8 +134,19 @@ class UserViewSet(viewsets.ModelViewSet):
         existing_email = request.data.get('existing_email')
         new_email = request.data.get('new_email')
 
-        if not user.check_password(current_password) or user.email != existing_email:
-            return Response({'error': 'Invalid credentials or email'}, status=status.HTTP_400_BAD_REQUEST)
+        if not user.check_password(current_password):
+            return Response({'error': 'Invalid password'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if user.email != existing_email:
+            return Response({'error': 'Invalid current email'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_email(new_email)
+        except ValidationError:
+            return Response({'error': 'Invalid email format'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(email=new_email).exists():
+            return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
         otp = get_random_string(6, allowed_chars='0123456789')
         user.new_email = new_email
@@ -156,8 +170,18 @@ class UserViewSet(viewsets.ModelViewSet):
         existing_phone = request.data.get('existing_phone')
         new_phone = request.data.get('new_phone')
 
-        if not user.check_password(current_password) or str(user.phone_number) != existing_phone:
-            return Response({'error': 'Invalid credentials or phone number'}, status=status.HTTP_400_BAD_REQUEST)
+        if not user.check_password(current_password):
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if str(user.phone_number) != existing_phone:
+            return Response({'error': 'Invalid current  phone number'}, status=status.HTTP_400_BAD_REQUEST)
+
+        new_phone_number = to_python(new_phone)
+        if not new_phone_number.is_valid():
+            return Response({'error': 'Invalid phone number format'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(phone_number=new_phone).exists():
+            return Response({'error': 'Phone number already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
         otp = get_random_string(6, allowed_chars='0123456789')
         user.new_phone = new_phone

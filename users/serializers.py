@@ -1,5 +1,4 @@
 from rest_framework import serializers
-
 from roles.serializers import RoleSerializer
 from .models import User
 from phonenumber_field.serializerfields import PhoneNumberField
