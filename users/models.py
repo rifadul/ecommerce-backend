@@ -35,6 +35,10 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     reset_token = models.CharField(max_length=20, blank=True, null=True)
+    new_email = models.EmailField(blank=True, null=True)
+    new_phone = PhoneNumberField(blank=True, null=True)
+    email_otp = models.CharField(max_length=6, blank=True, null=True)
+    phone_otp = models.CharField(max_length=6, blank=True, null=True)
 
     objects = UserManager()
 

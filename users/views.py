@@ -49,9 +49,9 @@ class UserViewSet(viewsets.ModelViewSet):
                 'access': str(refresh.access_token),
                 'user': UserSerializer(user).data
             }, status=status.HTTP_200_OK)
-        
+
         return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-    
+
     @action(detail=False, methods=['post'])
     def change_password(self, request, *args, **kwargs):
         user = self.request.user
@@ -60,7 +60,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if not user.check_password(current_password):
             return Response({'error': 'Current password is incorrect'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         user.set_password(new_password)
         user.save()
         return Response({'status': 'Password has been set'}, status=status.HTTP_200_OK)
@@ -78,9 +78,9 @@ class UserViewSet(viewsets.ModelViewSet):
             user.save()
             # print(f'Use the following token to reset your password: {reset_token}')
             send_password_reset_email(user, reset_token)
-            
+
             return Response({'status': 'Check your email for the password reset token'}, status=status.HTTP_200_OK)
-        
+
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
@@ -95,9 +95,9 @@ class UserViewSet(viewsets.ModelViewSet):
             user.reset_token = ''  # Clear the reset token after successful password reset
             user.save()
             return Response({'status': 'Password has been reset'}, status=status.HTTP_200_OK)
-        
+
         return Response({'error': 'Invalid token or email'}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=False, methods=['delete'], url_path='delete-multiple')
     def delete_multiple(self, request):
         """
@@ -108,21 +108,136 @@ class UserViewSet(viewsets.ModelViewSet):
         ids = request.query_params.get('ids')
         if not ids:
             return Response({"message": "No IDs provided."}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         ids_list = ids.split(',')
         roles = User.objects.filter(id__in=ids_list)
         count, _ = roles.delete()
-        
+
         if count == 0:
             return Response({"message": "No user found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
-        
+
         return Response({"message": f"User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-    
+
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def profile(self, request, *args, **kwargs):
         user = request.user
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def update_email(self, request, *args, **kwargs):
+        user = request.user
+        current_password = request.data.get('password')
+        existing_email = request.data.get('existing_email')
+        new_email = request.data.get('new_email')
+
+        if not user.check_password(current_password) or user.email != existing_email:
+            return Response({'error': 'Invalid credentials or email'}, status=status.HTTP_400_BAD_REQUEST)
+
+        otp = get_random_string(6, allowed_chars='0123456789')
+        user.new_email = new_email
+        user.email_otp = otp
+        user.save()
+
+        send_mail(
+            'Email Change OTP',
+            f'Your OTP for changing email to {new_email} is {otp}',
+            env('EMAIL_HOST_USER'),
+            [new_email],
+            fail_silently=False,
+        )
+
+        return Response({'status': 'OTP sent to new email'}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def update_phone(self, request, *args, **kwargs):
+        user = request.user
+        current_password = request.data.get('password')
+        existing_phone = request.data.get('existing_phone')
+        new_phone = request.data.get('new_phone')
+
+        if not user.check_password(current_password) or str(user.phone_number) != existing_phone:
+            return Response({'error': 'Invalid credentials or phone number'}, status=status.HTTP_400_BAD_REQUEST)
+
+        otp = get_random_string(6, allowed_chars='0123456789')
+        user.new_phone = new_phone
+        user.phone_otp = otp
+        user.save()
+
+        send_mail(
+            'Phone Number Change OTP',
+            f'Your OTP for changing phone number to {new_phone} is {otp}',
+            env('EMAIL_HOST_USER'),
+            [user.email],
+            fail_silently=False,
+        )
+
+        return Response({'status': 'OTP sent to registered email'}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def verify_otp(self, request, *args, **kwargs):
+        user = request.user
+        otp_type = request.data.get('otp_type')
+        otp = request.data.get('otp')
+
+        if otp_type == 'email':
+            if user.email_otp == otp:
+                user.email = user.new_email
+                user.new_email = ''
+                user.email_otp = ''
+                user.save()
+                return Response({'status': 'Email updated successfully'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+        elif otp_type == 'phone':
+            if user.phone_otp == otp:
+                user.phone_number = user.new_phone
+                user.new_phone = ''
+                user.phone_otp = ''
+                user.save()
+                return Response({'status': 'Phone number updated successfully'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': 'Invalid OTP type'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def resend_otp(self, request, *args, **kwargs):
+        user = request.user
+        otp_type = request.data.get('otp_type')
+
+        if otp_type == 'email':
+            new_email = user.new_email
+            otp = get_random_string(6, allowed_chars='0123456789')
+            user.email_otp = otp
+            user.save()
+
+            send_mail(
+                'Email Change OTP',
+                f'Your OTP for changing email to {new_email} is {otp}',
+                env('EMAIL_HOST_USER'),
+                [new_email],
+                fail_silently=False,
+            )
+            return Response({'status': 'OTP resent to new email'}, status=status.HTTP_200_OK)
+
+        elif otp_type == 'phone':
+            new_phone = user.new_phone
+            otp = get_random_string(6, allowed_chars='0123456789')
+            user.phone_otp = otp
+            user.save()
+
+            send_mail(
+                'Phone Number Change OTP',
+                f'Your OTP for changing phone number to {new_phone} is {otp}',
+                env('EMAIL_HOST_USER'),
+                [user.email],
+                fail_silently=False,
+            )
+            return Response({'status': 'OTP resent to registered email'}, status=status.HTTP_200_OK)
+        
+        else:
+            return Response({'error': 'Invalid OTP type'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 def send_password_reset_email(user, reset_token):
