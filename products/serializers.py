@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from collections import defaultdict
-
 from categories.models import Category
 from .models import Product, ProductVariant, ProductSizeGuide, ProductImage, Size
 from categories.serializers import CategorySerializer
@@ -10,12 +9,11 @@ class SizeSerializer(serializers.ModelSerializer):
         model = Size
         fields = ['id', 'size']
 
-class ColorQuantitySerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    variant_id = serializers.CharField()
-    color = serializers.CharField()
+class SizeQuantitySerializer(serializers.Serializer):
+    variant_id = serializers.IntegerField()
+    size_id = serializers.CharField()
+    size = serializers.CharField()
     quantity = serializers.IntegerField()
-    image = serializers.ImageField()
     in_stock = serializers.BooleanField()
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -39,9 +37,10 @@ class ProductSizeGuideSerializer(serializers.ModelSerializer):
         model = ProductSizeGuide
         fields = ['id', 'size', 'size_id', 'chest', 'length', 'sleeve']
 
-class GroupedSizeSerializer(serializers.Serializer):
-    size = SizeSerializer()
-    colors = ColorQuantitySerializer(many=True)
+class GroupedColorSerializer(serializers.Serializer):
+    color = serializers.CharField()
+    image = serializers.ImageField()
+    sizes = SizeQuantitySerializer(many=True)
 
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
@@ -58,25 +57,31 @@ class ProductSerializer(serializers.ModelSerializer):
         ]
 
     def get_variants(self, obj):
-        grouped_sizes = defaultdict(lambda: {'size': None, 'colors': []})
+        request = self.context.get('request')
+        grouped_colors = defaultdict(lambda: {'color': None, 'image': None, 'sizes': []})
+        
         for variant in obj.variants.all():
-            size_id = variant.size.id
-            if grouped_sizes[size_id]['size'] is None:
-                grouped_sizes[size_id]['size'] = SizeSerializer(variant.size).data
-            grouped_sizes[size_id]['colors'].append({
-                'id': variant.id,
+            color = variant.color
+            image_url = request.build_absolute_uri(variant.image.url) if variant.image and request else None
+            if grouped_colors[color]['color'] is None:
+                grouped_colors[color]['color'] = color
+                grouped_colors[color]['image'] = image_url
+            grouped_colors[color]['sizes'].append({
                 'variant_id': variant.id,
-                'color': variant.color,
+                'size_id': variant.size.id,
+                'size': variant.size.size,
                 'quantity': variant.quantity,
-                'image': variant.image.url,
                 'in_stock': variant.in_stock
             })
+        
         result = []
-        for size_id, data in grouped_sizes.items():
+        for color, data in grouped_colors.items():
             result.append({
-                'size': data['size'],
-                'colors': data['colors']
+                'color': data['color'],
+                'image': data['image'],
+                'sizes': data['sizes']
             })
+        
         return result
 
     def validate(self, data):
