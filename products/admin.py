@@ -1,7 +1,6 @@
-# products/admin.py
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import  Product, ProductVariant, ProductSizeGuide, ProductImage, Size
+from .models import Product, ProductVariant, ProductSizeGuide, ProductImage, Size
 from .forms import ProductAdminForm, ProductVariantInlineForm, ProductSizeGuideInlineForm
 
 class ProductVariantInline(admin.TabularInline):
@@ -19,8 +18,8 @@ class ProductSizeGuideInline(admin.TabularInline):
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 1
-    readonly_fields = ('image_preview',)  # Add image_preview to readonly_fields
-    fields = ('image', 'image_preview')  # Ensure image_preview is displayed with image field
+    readonly_fields = ('image_preview',)
+    fields = ('image', 'image_preview')
 
     def image_preview(self, obj):
         if obj.image:
@@ -29,11 +28,9 @@ class ProductImageInline(admin.TabularInline):
     
     image_preview.short_description = 'Image Preview'
 
-
-
 class ProductAdmin(admin.ModelAdmin):
     form = ProductAdminForm
-    list_display = ( 'image_tag', 'name', 'category', 'price', 'discount_price', 'sku',)
+    list_display = ('image_tag', 'name', 'category', 'price', 'discount_price', 'sku',)
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'short_description', 'description', 'slug', 'sku',)
@@ -58,9 +55,6 @@ class ProductAdmin(admin.ModelAdmin):
     image_tag.short_description = 'Image'
 
     prepopulated_fields = {'slug': ('name',)}
-
-
-
 
 @admin.register(Size)
 class SizeAdmin(admin.ModelAdmin):
