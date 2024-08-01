@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from collections import defaultdict
+
 from categories.models import Category
 from .models import Product, ProductVariant, ProductSizeGuide, ProductImage, Size
 from categories.serializers import CategorySerializer
@@ -47,12 +48,14 @@ class ProductSerializer(serializers.ModelSerializer):
     variants = serializers.SerializerMethodField()
     size_guides = ProductSizeGuideSerializer(many=True)
     images = ProductImageSerializer(many=True)
+    primary_image = serializers.SerializerMethodField()
+    all_images = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'short_description', 'description', 'slug', 'sku', 'category',
-            'price', 'discount_price', 'images', 'width',
+            'price', 'discount_price', 'primary_image','all_images', 'images', 'width',
             'height', 'weight', 'depth', 'variants', 'size_guides'
         ]
 
@@ -83,6 +86,33 @@ class ProductSerializer(serializers.ModelSerializer):
             })
         
         return result
+
+    def get_primary_image(self, obj):
+        request = self.context.get('request')
+        primary_image = obj.images.first()
+        if primary_image and request:
+            return request.build_absolute_uri(primary_image.image.url)
+        return None
+    
+    def get_all_images(self, obj):
+        request = self.context.get('request')
+        all_images = []
+        
+        # Add product images
+        for image in obj.images.all():
+            all_images.append({
+                'id': image.id,
+                'image': request.build_absolute_uri(image.image.url) if request else None
+            })
+
+        # Add variant images
+        for variant in obj.variants.all():
+            all_images.append({
+                'id': variant.id,
+                'image': request.build_absolute_uri(variant.image.url) if request else None
+            })
+
+        return all_images
 
     def validate(self, data):
         if not data.get('variants'):
