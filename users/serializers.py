@@ -27,13 +27,14 @@ class UserCreateSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     role = RoleSerializer()
     phone_number = PhoneNumberField()
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ['id', 'email', 'phone_number', 'first_name', 'last_name', 'image', 'role']
 
-
-class UserImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['image']
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None

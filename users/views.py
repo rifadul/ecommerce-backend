@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
 from .models import User
-from .serializers import UserCreateSerializer, UserSerializer, UserImageSerializer
+from .serializers import UserCreateSerializer, UserSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
@@ -50,7 +50,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
-                'user': UserSerializer(user).data
+                'user': UserSerializer(user, context={'request': request}).data
             }, status=status.HTTP_200_OK)
 
         return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -126,7 +126,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def profile(self, request, *args, **kwargs):
         user = request.user
-        serializer = UserSerializer(user)
+        serializer = UserSerializer(user, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
@@ -265,12 +265,15 @@ class UserViewSet(viewsets.ModelViewSet):
         else:
             return Response({'error': 'Invalid OTP type'}, status=status.HTTP_400_BAD_REQUEST)
 
-
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def update_image(self, request, *args, **kwargs):
         user = request.user
-        serializer = UserImageSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'status': 'Image updated successfully', 'user': UserSerializer(user).data}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        image = request.FILES.get('image')
+
+        if not image:
+            return Response({'error': 'No image provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.image = image
+        user.save()
+
+        return Response({'status': 'Image updated successfully', 'user': UserSerializer(user, context={'request': request}).data}, status=status.HTTP_200_OK)
