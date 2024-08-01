@@ -1,4 +1,3 @@
-# products/forms.py
 from django import forms
 from .models import Product, ProductVariant, ProductSizeGuide
 
@@ -9,21 +8,7 @@ class ProductAdminForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-
-        # Ensure main image is provided
-        # if not cleaned_data.get('main_image'):
-        #     self.add_error('main_image', 'Main image is required.')
-
-        # Ensure at least one product variant is provided
-        # if not self.instance.variants.exists() and not cleaned_data.get('variants'):
-        #     raise forms.ValidationError('At least one product variant is required.')
-
-        # Ensure at least one product size guide is provided
-        # if not self.instance.size_guides.exists() and not cleaned_data.get('size_guides'):
-        #     raise forms.ValidationError('At least one product size guide is required.')
-
         return cleaned_data
-    
 
 class ProductVariantInlineForm(forms.ModelForm):
     class Meta:
