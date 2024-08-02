@@ -1,11 +1,11 @@
-# cart/serializers.py
 from rest_framework import serializers
+from collections import defaultdict
 
 from categories.serializers import CategorySerializer
-from products.models import Product, ProductVariant
 from .models import Cart, CartItem
-from products.serializers import ProductImageSerializer, ProductVariantSerializer, SizeSerializer
-
+from products.models import Product, ProductVariant
+from products.serializers import ProductImageSerializer, SizeSerializer
+from coupons.serializers import CouponSerializer
 
 class CartProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
@@ -18,18 +18,17 @@ class CartProductSerializer(serializers.ModelSerializer):
             'price', 'discount_price', 'width', 'height', 'weight', 'depth', 'images'
         ]
 
-
 class CartProductVariantSerializer(serializers.ModelSerializer):
-    product = CartProductSerializer(read_only=True)  # Include the limited product serializer for cart
+    product = CartProductSerializer(read_only=True)
     in_stock = serializers.ReadOnlyField()
     size = SizeSerializer()
 
     class Meta:
         model = ProductVariant
-        fields = ['id', 'product', 'quantity', 'color', 'size', 'image', 'in_stock']
+        fields = ['id', 'product', 'color', 'size', 'image', 'in_stock']
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product_variant = CartProductVariantSerializer()  # Use the custom serializer for cart items
+    product_variant = CartProductVariantSerializer()
     total_price = serializers.ReadOnlyField()
 
     class Meta:
@@ -38,7 +37,14 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
+    coupon = CouponSerializer()
+    is_coupon_applied = serializers.SerializerMethodField()
+    price_before_discount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
 
     class Meta:
         model = Cart
-        fields = ['id', 'user', 'items', 'created_at', 'updated_at']
+        fields = ['id', 'items', 'coupon', 'subtotal', 'tax', 'shipping', 'price_before_discount', 'discount', 'total', 'is_coupon_applied']
+
+    def get_is_coupon_applied(self, obj):
+        return obj.coupon is not None
