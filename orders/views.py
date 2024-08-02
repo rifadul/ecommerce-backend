@@ -1,12 +1,17 @@
+import stripe
+from django.conf import settings
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
+
 from .models import Order, OrderItem, ShippingMethod, Payment
 from .serializers import OrderSerializer, PaymentSerializer, ShippingMethodSerializer
 from cart.models import Cart, CartItem
 from address.models import Address
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class ShippingMethodViewSet(viewsets.ModelViewSet):
     queryset = ShippingMethod.objects.all()
@@ -36,7 +41,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response({"message": "Shipping method not found."}, status=status.HTTP_404_NOT_FOUND)
 
         # Determine payment status based on payment method
-        payment_status = 'unpaid' if payment_method == 'cash_on_delivery' else 'paid'
+        payment_status = 'unpaid' if payment_method == 'cash_on_delivery' else 'pending'
 
         order = Order.objects.create(
             user=user,
@@ -69,8 +74,33 @@ class OrderViewSet(viewsets.ModelViewSet):
         cart.items.all().delete()
         cart.delete()
 
-        serializer = self.get_serializer(order)
-        return Response({"message": "Order created successfully.", "data": serializer.data}, status=status.HTTP_201_CREATED)
+        if payment_method == 'stripe':
+            # Generate Stripe Payment Link
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'product_data': {
+                            'name': 'Order {}'.format(order.id),
+                        },
+                        'unit_amount': int(order.total * 100),
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url=settings.STRIPE_SUCCESS_URL,
+                cancel_url=settings.STRIPE_CANCEL_URL,
+                metadata={'order_id': order.id}
+            )
+            return Response({
+                "message": "Order created successfully.",
+                "data": OrderSerializer(order).data,
+                "payment_url": session.url
+            }, status=status.HTTP_201_CREATED)
+        else:
+            serializer = self.get_serializer(order)
+            return Response({"message": "Order created successfully.", "data": serializer.data}, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
         try:
@@ -89,11 +119,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(orders, many=True)
         return Response({"message": "Orders retrieved successfully.", "data": serializer.data}, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
-    def cancel_order(self, request):
-        order_id = request.data.get('order_id')
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def cancel_order(self, request, pk=None):
         try:
-            order = Order.objects.get(id=order_id, user=request.user)
+            order = self.get_object()
+            if order.user != request.user:
+                return Response({"message": "You do not have permission to cancel this order."}, status=status.HTTP_403_FORBIDDEN)
             if order.order_status not in ['processing', 'shipped']:
                 return Response({"message": "Order cannot be cancelled."}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -101,8 +132,37 @@ class OrderViewSet(viewsets.ModelViewSet):
             order.active = False
             order.save()
             return Response({"message": "Order cancelled successfully."}, status=status.HTTP_200_OK)
-        except Order.DoesNotExist:
+        except NotFound:
             return Response({"message": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def create_payment_intent(self, request, pk=None):
+        try:
+            order = self.get_object()
+            if order.payment_status == 'paid':
+                return Response({"message": "Order is already paid."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create a payment intent with Stripe
+            intent = stripe.PaymentIntent.create(
+                amount=int(order.total * 100),  # Amount is in cents
+                currency='usd',
+                metadata={'order_id': order.id}
+            )
+            
+            Payment.objects.create(
+                order=order,
+                payment_method='stripe',
+                amount=order.total,
+                status='pending',
+                stripe_payment_intent_id=intent['id']
+            )
+
+            return Response({
+                'client_secret': intent['client_secret'],
+                'payment_intent_id': intent['id']
+            }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -136,3 +196,34 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(payment)
         return Response({"message": "Payment created successfully.", "data": serializer.data}, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def handle_webhook(self, request):
+        payload = request.body
+        sig_header = request.META['HTTP_STRIPE_SIGNATURE']
+        endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+
+        event = None
+
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, endpoint_secret
+            )
+        except ValueError as e:
+            # Invalid payload
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        except stripe.error.SignatureVerificationError as e:
+            # Invalid signature
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # Handle the checkout.session.completed event
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            payment_intent_id = session.get('payment_intent')
+            payment = Payment.objects.get(stripe_payment_intent_id=payment_intent_id)
+            payment.status = 'completed'
+            payment.save()
+            payment.order.payment_status = 'paid'
+            payment.order.save()
+
+        return Response(status=status.HTTP_200_OK)

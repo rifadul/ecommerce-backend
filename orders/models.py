@@ -58,6 +58,7 @@ class Payment(BaseModel):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')], default='pending')
     stripe_charge_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True)  # Add this field
 
     def __str__(self):
         return f"Payment({self.id}, {self.order})"
