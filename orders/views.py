@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from .models import Order, OrderItem, ShippingMethod, Payment
 from .serializers import OrderSerializer, PaymentSerializer, ShippingMethodSerializer
-from cart.models import Cart
+from cart.models import Cart, CartItem
 from address.models import Address
 
 class ShippingMethodViewSet(viewsets.ModelViewSet):
@@ -52,7 +52,8 @@ class OrderViewSet(viewsets.ModelViewSet):
             price_before_discount=cart.price_before_discount,
             is_coupon_applied=cart.coupon is not None,
             payment_method=payment_method,
-            payment_status=payment_status
+            payment_status=payment_status,
+            active=True  # Set active to True when the order is created
         )
 
         for item in cart.items.all():
@@ -87,6 +88,23 @@ class OrderViewSet(viewsets.ModelViewSet):
         orders = Order.objects.filter(user=user)
         serializer = self.get_serializer(orders, many=True)
         return Response({"message": "Orders retrieved successfully.", "data": serializer.data}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def cancel_order(self, request):
+        order_id = request.data.get('order_id')
+        try:
+            order = Order.objects.get(id=order_id, user=request.user)
+            if order.order_status not in ['processing', 'shipped']:
+                return Response({"message": "Order cannot be cancelled."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            order.order_status = 'cancelled'
+            order.active = False
+            order.save()
+            return Response({"message": "Order cancelled successfully."}, status=status.HTTP_200_OK)
+        except Order.DoesNotExist:
+            return Response({"message": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()

@@ -31,9 +31,15 @@ class Order(BaseModel):
     payment_method = models.CharField(max_length=50, choices=[('cash_on_delivery', 'Cash on Delivery'), ('stripe', 'Stripe')])
     payment_status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('paid', 'Paid')], default='pending')
     order_status = models.CharField(max_length=50, choices=[('processing', 'Processing'), ('shipped', 'Shipped'), ('delivered', 'Delivered'), ('cancelled', 'Cancelled')], default='processing')
+    active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Order({self.id}, {self.user})"
+    
+    def save(self, *args, **kwargs):
+        if self.order_status == 'delivered' or self.order_status == 'cancelled':
+            self.active = False
+        super(Order, self).save(*args, **kwargs)
 
 class OrderItem(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
