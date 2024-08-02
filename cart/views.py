@@ -4,25 +4,47 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 
-from common.mixins import SuccessMessageMixin
 from .models import Cart, CartItem
 from .serializers import CartSerializer, CartItemSerializer
 from products.models import ProductVariant
+from coupons.models import Coupon
 
-class CartViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
+class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Cart.objects.filter(user=self.request.user)
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
-    def my_cart(self, request):
+    def retrieve(self, request, *args, **kwargs):
         cart, created = Cart.objects.get_or_create(user=request.user)
+        cart.calculate_totals()
         serializer = self.get_serializer(cart)
         return Response(serializer.data)
 
-class CartItemViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_cart(self, request):
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        cart.calculate_totals()
+        serializer = self.get_serializer(cart)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def apply_coupon(self, request):
+        cart = Cart.objects.get(user=request.user)
+        code = request.data.get('code')
+        try:
+            coupon = Coupon.objects.get(code=code, active=True)
+            if cart.coupon is None:
+                cart.coupon = coupon
+                cart.calculate_totals()
+                return Response({"message": "Coupon applied successfully."}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "A coupon is already applied to this cart."}, status=status.HTTP_400_BAD_REQUEST)
+        except Coupon.DoesNotExist:
+            return Response({"message": "Invalid or inactive coupon code."}, status=status.HTTP_400_BAD_REQUEST)
+
+class CartItemViewSet(viewsets.ModelViewSet):
     serializer_class = CartItemSerializer
     permission_classes = [IsAuthenticated]
 
@@ -56,6 +78,7 @@ class CartItemViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
 
         cart_item = CartItem.objects.create(cart=cart, product_variant=product_variant, quantity=int(quantity))
         cart_item.save()
+        cart.calculate_totals()
 
         serializer = self.get_serializer(cart_item)
         return Response({"message": "Product added to cart successfully.", "data": serializer.data}, status=status.HTTP_201_CREATED)
@@ -86,6 +109,7 @@ class CartItemViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
 
         cart_item.quantity = quantity
         cart_item.save()
+        cart.calculate_totals()
 
         serializer = self.get_serializer(cart_item)
         return Response(serializer.data)
@@ -104,4 +128,5 @@ class CartItemViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
             cart.delete()
             return Response({"message": "Cart and its items deleted."}, status=status.HTTP_204_NO_CONTENT)
 
+        cart.calculate_totals()
         return Response({"message": "Cart item deleted successfully."}, status=status.HTTP_204_NO_CONTENT)

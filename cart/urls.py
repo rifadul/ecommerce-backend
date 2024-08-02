@@ -8,5 +8,6 @@ router.register(r'cart-items', CartItemViewSet, basename='cartitem')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('apply-coupon/', CartViewSet.as_view({'post': 'apply_coupon'}), name='apply-coupon'),
     path('my-cart/', CartViewSet.as_view({'get': 'my_cart'}), name='my-cart'),
 ]

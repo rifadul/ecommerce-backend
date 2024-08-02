@@ -1,8 +1,11 @@
 from rest_framework import serializers
+from collections import defaultdict
+
 from categories.serializers import CategorySerializer
-from products.models import Product, ProductVariant
 from .models import Cart, CartItem
-from products.serializers import ProductImageSerializer, ProductVariantSerializer, SizeSerializer
+from products.models import Product, ProductVariant
+from products.serializers import ProductImageSerializer, SizeSerializer
+from coupons.serializers import CouponSerializer
 
 class CartProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
@@ -34,7 +37,14 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
+    coupon = CouponSerializer()
+    is_coupon_applied = serializers.SerializerMethodField()
+    price_before_discount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
 
     class Meta:
         model = Cart
-        fields = ['id', 'items', 'created_at', 'updated_at']
+        fields = ['id', 'items', 'coupon', 'subtotal', 'tax', 'shipping', 'price_before_discount', 'discount', 'total', 'is_coupon_applied']
+
+    def get_is_coupon_applied(self, obj):
+        return obj.coupon is not None
