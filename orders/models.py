@@ -39,8 +39,8 @@ class OrderItem(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product_variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
-    product_price_at_order_time = models.DecimalField(max_digits=10, decimal_places=2)
-    product_discount_price_at_order_time = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    price_at_order_time = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_price_at_order_time = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):

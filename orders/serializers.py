@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import Order, OrderItem, ShippingMethod, Payment
-from address.models import Address
 from address.serializers import AddressSerializer
 from coupons.serializers import CouponSerializer
 from products.serializers import ProductVariantSerializer, ProductSerializer
@@ -16,7 +15,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product_variant', 'product', 'quantity', 'product_price_at_order_time', 'product_discount_price_at_order_time', 'total_price']
+        fields = ['id', 'product_variant', 'product', 'quantity', 'price_at_order_time', 'discount_price_at_order_time', 'total_price']
 
     def get_product(self, obj):
         return ProductSerializer(obj.product_variant.product).data
