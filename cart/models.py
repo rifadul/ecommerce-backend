@@ -21,7 +21,7 @@ class Cart(BaseModel):
     def calculate_totals(self):
         self.subtotal = sum(item.total_price for item in self.items.all())
         self.tax = self.subtotal * Decimal('0.1')  # Assuming a tax rate of 10%
-        self.shipping = Decimal('10.0')  # Assuming a flat shipping rate
+        self.shipping = Decimal('150.0')  # Assuming a flat shipping rate
         self.price_before_discount = self.subtotal + self.tax + self.shipping
         if self.coupon and self.coupon.is_valid():
             if self.coupon.discount_type == 'percentage':
