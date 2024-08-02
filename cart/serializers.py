@@ -1,11 +1,8 @@
-# cart/serializers.py
 from rest_framework import serializers
-
 from categories.serializers import CategorySerializer
 from products.models import Product, ProductVariant
 from .models import Cart, CartItem
 from products.serializers import ProductImageSerializer, ProductVariantSerializer, SizeSerializer
-
 
 class CartProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
@@ -18,18 +15,17 @@ class CartProductSerializer(serializers.ModelSerializer):
             'price', 'discount_price', 'width', 'height', 'weight', 'depth', 'images'
         ]
 
-
 class CartProductVariantSerializer(serializers.ModelSerializer):
-    product = CartProductSerializer(read_only=True)  # Include the limited product serializer for cart
+    product = CartProductSerializer(read_only=True)
     in_stock = serializers.ReadOnlyField()
     size = SizeSerializer()
 
     class Meta:
         model = ProductVariant
-        fields = ['id', 'product', 'quantity', 'color', 'size', 'image', 'in_stock']
+        fields = ['id', 'product', 'color', 'size', 'image', 'in_stock']
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product_variant = CartProductVariantSerializer()  # Use the custom serializer for cart items
+    product_variant = CartProductVariantSerializer()
     total_price = serializers.ReadOnlyField()
 
     class Meta:
@@ -41,4 +37,4 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = ['id', 'user', 'items', 'created_at', 'updated_at']
+        fields = ['id', 'items', 'created_at', 'updated_at']

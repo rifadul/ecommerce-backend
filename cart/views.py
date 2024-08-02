@@ -1,27 +1,28 @@
-# cart/views.py
+from django.forms import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import action
 
 from common.mixins import SuccessMessageMixin
 from .models import Cart, CartItem
 from .serializers import CartSerializer, CartItemSerializer
 from products.models import ProductVariant
 
-class CartViewSet(SuccessMessageMixin,viewsets.ModelViewSet):
+class CartViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Cart.objects.filter(user=self.request.user)
 
-    def retrieve(self, request, *args, **kwargs):
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_cart(self, request):
         cart, created = Cart.objects.get_or_create(user=request.user)
         serializer = self.get_serializer(cart)
         return Response(serializer.data)
 
-class CartItemViewSet(SuccessMessageMixin,viewsets.ModelViewSet):
+class CartItemViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
     serializer_class = CartItemSerializer
     permission_classes = [IsAuthenticated]
 
@@ -68,14 +69,14 @@ class CartItemViewSet(SuccessMessageMixin,viewsets.ModelViewSet):
 
         quantity = request.data.get('quantity', None)
         if quantity is None:
-            raise ValidationError({"quantity": "This field is required."})
+            raise ValidationError({"message": "A valid integer greater than 0 is required."})
 
         try:
             quantity = int(quantity)
             if quantity <= 0:
                 raise ValueError
         except ValueError:
-            raise ValidationError({"quantity": "A valid integer greater than 0 is required."})
+            raise ValidationError({"message": "A valid integer greater than 0 is required."})
 
         if cart_item.product_variant.quantity < quantity:
             return Response(
@@ -103,4 +104,4 @@ class CartItemViewSet(SuccessMessageMixin,viewsets.ModelViewSet):
             cart.delete()
             return Response({"message": "Cart and its items deleted."}, status=status.HTTP_204_NO_CONTENT)
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({"message": "Cart item deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
