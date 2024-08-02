@@ -3,7 +3,7 @@ from .models import Order, OrderItem, ShippingMethod, Payment
 from address.models import Address
 from address.serializers import AddressSerializer
 from coupons.serializers import CouponSerializer
-from products.serializers import ProductVariantSerializer
+from products.serializers import ProductVariantSerializer, ProductSerializer
 
 class ShippingMethodSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,10 +12,14 @@ class ShippingMethodSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_variant = ProductVariantSerializer()
+    product = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product_variant', 'quantity', 'price', 'discount_price', 'total_price']
+        fields = ['id', 'product_variant', 'product', 'quantity', 'product_price_at_order_time', 'product_discount_price_at_order_time', 'total_price']
+
+    def get_product(self, obj):
+        return ProductSerializer(obj.product_variant.product).data
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
