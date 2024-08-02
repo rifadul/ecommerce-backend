@@ -49,4 +49,6 @@ class CartItem(BaseModel):
 
     @property
     def total_price(self):
-        return self.product_variant.product.price * self.quantity
+        # Use discount price if available, otherwise use main price
+        product_price = self.product_variant.product.discount_price if self.product_variant.product.discount_price else self.product_variant.product.price
+        return product_price * self.quantity
