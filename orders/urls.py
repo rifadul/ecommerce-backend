@@ -10,4 +10,5 @@ router.register(r'shipping-methods', ShippingMethodViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('webhook/', PaymentViewSet.as_view({'post': 'handle_webhook'}), name='stripe-webhook'),
+    path('orders/payment-success/', OrderViewSet.as_view({'get': 'payment_success'}), name='payment-success'),
 ]

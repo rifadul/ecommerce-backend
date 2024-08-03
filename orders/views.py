@@ -2,20 +2,24 @@ import stripe
 from django.conf import settings
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import NotFound
-
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from .models import Order, OrderItem, ShippingMethod, Payment
 from .serializers import OrderSerializer, PaymentSerializer, ShippingMethodSerializer
 from cart.models import Cart, CartItem
 from address.models import Address
+import logging
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+logger = logging.getLogger(__name__)
+
 class ShippingMethodViewSet(viewsets.ModelViewSet):
     queryset = ShippingMethod.objects.all()
-    serializer_class = ShippingMethodSerializer()
+    serializer_class = ShippingMethodSerializer
     permission_classes = [IsAuthenticated]
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -40,7 +44,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         except ShippingMethod.DoesNotExist:
             return Response({"message": "Shipping method not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Determine payment status based on payment method
         payment_status = 'unpaid' if payment_method == 'cash_on_delivery' else 'pending'
 
         order = Order.objects.create(
@@ -58,7 +61,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             is_coupon_applied=cart.coupon is not None,
             payment_method=payment_method,
             payment_status=payment_status,
-            active=True  # Set active to True when the order is created
+            active=True
         )
 
         for item in cart.items.all():
@@ -75,29 +78,40 @@ class OrderViewSet(viewsets.ModelViewSet):
         cart.delete()
 
         if payment_method == 'stripe':
-            # Generate Stripe Payment Link
-            session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': 'usd',
-                        'product_data': {
-                            'name': 'Order {}'.format(order.id),
+            try:
+                session = stripe.checkout.Session.create(
+                    payment_method_types=['card'],
+                    line_items=[{
+                        'price_data': {
+                            'currency': 'usd',
+                            'product_data': {
+                                'name': 'Order {}'.format(order.id),
+                            },
+                            'unit_amount': int(order.total * 100),
                         },
-                        'unit_amount': int(order.total * 100),
-                    },
-                    'quantity': 1,
-                }],
-                mode='payment',
-                success_url=settings.STRIPE_SUCCESS_URL,
-                cancel_url=settings.STRIPE_CANCEL_URL,
-                metadata={'order_id': order.id}
-            )
-            return Response({
-                "message": "Order created successfully.",
-                "data": OrderSerializer(order).data,
-                "payment_url": session.url
-            }, status=status.HTTP_201_CREATED)
+                        'quantity': 1,
+                    }],
+                    mode='payment',
+                    success_url=settings.STRIPE_SUCCESS_URL + '?session_id={CHECKOUT_SESSION_ID}',
+                    cancel_url=settings.STRIPE_CANCEL_URL,
+                    metadata={'order_id': str(order.id)}
+                )
+
+                Payment.objects.create(
+                    order=order,
+                    payment_method='stripe',
+                    amount=order.total,
+                    status='pending',
+                    stripe_payment_intent_id=session.payment_intent  # Ensure this is correctly set
+                )
+
+                return Response({
+                    "message": "Order created successfully.",
+                    "data": OrderSerializer(order).data,
+                    "payment_url": session.url
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = self.get_serializer(order)
             return Response({"message": "Order created successfully.", "data": serializer.data}, status=status.HTTP_201_CREATED)
@@ -144,9 +158,8 @@ class OrderViewSet(viewsets.ModelViewSet):
             if order.payment_status == 'paid':
                 return Response({"message": "Order is already paid."}, status=status.HTTP_400_BAD_REQUEST)
             
-            # Create a payment intent with Stripe
             intent = stripe.PaymentIntent.create(
-                amount=int(order.total * 100),  # Amount is in cents
+                amount=int(order.total * 100),
                 currency='usd',
                 metadata={'order_id': order.id}
             )
@@ -166,10 +179,26 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def payment_success(self, request):
+        session_id = request.query_params.get('session_id')
+        if not session_id:
+            return Response({"message": "Session ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            payment_intent_id = session.payment_intent
+            payment = Payment.objects.get(stripe_payment_intent_id=payment_intent_id)
+            order = payment.order
+            serializer = OrderSerializer(order)
+            return Response({"success": True, "order": serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"success": False, "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
         order_id = request.data.get('order')
@@ -197,7 +226,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(payment)
         return Response({"message": "Payment created successfully.", "data": serializer.data}, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    @method_decorator(csrf_exempt)
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def handle_webhook(self, request):
         payload = request.body
         sig_header = request.META['HTTP_STRIPE_SIGNATURE']
@@ -210,20 +240,23 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 payload, sig_header, endpoint_secret
             )
         except ValueError as e:
-            # Invalid payload
+            logger.error('Invalid payload')
             return Response(status=status.HTTP_400_BAD_REQUEST)
         except stripe.error.SignatureVerificationError as e:
-            # Invalid signature
+            logger.error('Invalid signature')
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        # Handle the checkout.session.completed event
         if event['type'] == 'checkout.session.completed':
+            logger.info('Received checkout.session.completed event')
             session = event['data']['object']
             payment_intent_id = session.get('payment_intent')
-            payment = Payment.objects.get(stripe_payment_intent_id=payment_intent_id)
-            payment.status = 'completed'
-            payment.save()
-            payment.order.payment_status = 'paid'
-            payment.order.save()
+            try:
+                payment = Payment.objects.get(stripe_payment_intent_id=payment_intent_id)
+                payment.status = 'completed'
+                payment.save()
+                payment.order.payment_status = 'paid'
+                payment.order.save()
+            except Payment.DoesNotExist:
+                logger.error('Payment not found for payment_intent_id: %s', payment_intent_id)
 
         return Response(status=status.HTTP_200_OK)
