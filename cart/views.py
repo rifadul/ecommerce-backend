@@ -29,21 +29,6 @@ class CartViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(cart)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
-    def apply_coupon(self, request):
-        cart = Cart.objects.get(user=request.user)
-        code = request.data.get('code')
-        try:
-            coupon = Coupon.objects.get(code=code, active=True)
-            if cart.coupon is None:
-                cart.coupon = coupon
-                cart.calculate_totals()
-                return Response({"message": "Coupon applied successfully."}, status=status.HTTP_200_OK)
-            else:
-                return Response({"message": "A coupon is already applied to this cart."}, status=status.HTTP_400_BAD_REQUEST)
-        except Coupon.DoesNotExist:
-            return Response({"message": "Invalid or inactive coupon code."}, status=status.HTTP_400_BAD_REQUEST)
-
 class CartItemViewSet(viewsets.ModelViewSet):
     serializer_class = CartItemSerializer
     permission_classes = [IsAuthenticated]

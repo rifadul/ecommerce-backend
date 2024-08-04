@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 
+from cart.models import Cart
 from common.mixins import SuccessMessageMixin
 from .models import Coupon
 from .serializers import CouponSerializer
@@ -15,14 +16,25 @@ class CouponViewSet(SuccessMessageMixin,viewsets.ModelViewSet):
 
     def get_queryset(self):
         return self.queryset.filter(active=True)
+    
+    @action(detail=False, methods=['post'], url_path='apply-coupon', permission_classes=[IsAuthenticated])
+    def apply_coupon(self, request):
+        cart = Cart.objects.get(user=request.user)
+        code = request.data.get('code')
+        try:
+            coupon = Coupon.objects.get(code=code, active=True)
+            if cart.coupon is None:
+                cart.coupon = coupon
+                cart.calculate_totals()
+                return Response({"message": "Coupon applied successfully."}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "A coupon is already applied to this cart."}, status=status.HTTP_400_BAD_REQUEST)
+        except Coupon.DoesNotExist:
+            return Response({"message": "Invalid or inactive coupon code."}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['delete'], url_path='delete-multiple')
+    @action(detail=False, methods=['delete'], url_path='delete-multiple',permission_classes=[IsAuthenticated])
     def delete_multiple(self, request):
-        """
-        Custom action to handle multiple deletion of coupons.
-        This action expects a list of coupon IDs as query parameters.
-        Example request: DELETE /api/coupons/delete-multiple/?ids=uuid1,uuid2,uuid3
-        """
+        
         ids = request.query_params.get('ids')
         if not ids:
             return Response({"message": "No IDs provided."}, status=status.HTTP_400_BAD_REQUEST)

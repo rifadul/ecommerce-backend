@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'coupons',
     'wishlists',
     'address',
+    'orders',
 ]
 
 
@@ -264,3 +265,9 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 
+
+STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY')
+STRIPE_PUBLIC_KEY = env('STRIPE_PUBLIC_KEY')
+STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET')
+STRIPE_SUCCESS_URL = 'http://localhost:3000/order-success/'  # Replace with your actual success URL
+STRIPE_CANCEL_URL = 'http://localhost:3000/order-cancel/' 
