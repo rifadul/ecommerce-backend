@@ -111,6 +111,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                     "payment_url": session.url
                 }, status=status.HTTP_201_CREATED)
             except Exception as e:
+                logger.error(f"Stripe error: {str(e)}")
                 return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = self.get_serializer(order)
@@ -188,10 +189,20 @@ class OrderViewSet(viewsets.ModelViewSet):
         try:
             session = stripe.checkout.Session.retrieve(session_id)
             payment_intent_id = session.payment_intent
+            if not payment_intent_id:
+                return Response({"message": "Payment intent ID not found in session."}, status=status.HTTP_400_BAD_REQUEST)
+
             payment = Payment.objects.get(stripe_payment_intent_id=payment_intent_id)
             order = payment.order
+            order.payment_status = 'paid'
+            order.save()
+            payment.status = 'completed'
+            payment.save()
+
             serializer = OrderSerializer(order)
             return Response({"success": True, "order": serializer.data}, status=status.HTTP_200_OK)
+        except Payment.DoesNotExist:
+            return Response({"message": "Payment not found for payment_intent_id: {}".format(payment_intent_id)}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"success": False, "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
