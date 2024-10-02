@@ -80,7 +80,12 @@ class ProductViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
                 "name": color_name
             })
 
-        return Response(color_data, status=status.HTTP_200_OK)
+        return Response(
+            {
+            "data":color_data
+            },
+            status=status.HTTP_200_OK
+        )
 
     @action(detail=False, methods=['get'], url_path='price-stats')
     def get_price_stats(self, request):
