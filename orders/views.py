@@ -85,16 +85,16 @@ class OrderViewSet(viewsets.ModelViewSet):
                         'price_data': {
                             'currency': 'usd',
                             'product_data': {
-                                'name': 'Order {}'.format(order.id),
+                                'name': 'Order {}'.format(order.order_number),
                             },
                             'unit_amount': int(order.total * 100),
                         },
                         'quantity': 1,
                     }],
                     mode='payment',
-                    success_url=settings.STRIPE_SUCCESS_URL + '?session_id={CHECKOUT_SESSION_ID}',
+                    success_url=f'{settings.STRIPE_SUCCESS_URL}?order_number={order.order_number}',
                     cancel_url=settings.STRIPE_CANCEL_URL,
-                    metadata={'order_id': str(order.id)}
+                    metadata={'order_id': str(order.order_number)}
                 )
 
                 Payment.objects.create(
@@ -127,6 +127,25 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def order_details(self, request):
+        order_number = request.query_params.get('order_number')
+
+        if not order_number:
+            return Response({"message": "Order number not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            order = Order.objects.get(order_number=order_number, user=request.user)
+            serializer = self.get_serializer(order)
+            return Response({
+                "message": "Order retrieved successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        except Order.DoesNotExist:
+            return Response({"message": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def my_orders(self, request):
         user = request.user
@@ -162,7 +181,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             intent = stripe.PaymentIntent.create(
                 amount=int(order.total * 100),
                 currency='usd',
-                metadata={'order_id': order.id}
+                metadata={'order_number': order.order_number}
             )
             
             Payment.objects.create(

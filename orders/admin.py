@@ -21,7 +21,7 @@ class PaymentInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'billing_address', 'shipping_address', 'shipping_method', 'subtotal', 'tax', 'shipping', 'discount', 'total', 'payment_method', 'payment_status', 'order_status', 'created_at', 'updated_at')
+    list_display = ('id','order_number', 'user', 'billing_address', 'shipping_address', 'shipping_method', 'subtotal', 'tax', 'shipping', 'discount', 'total', 'payment_method', 'payment_status', 'order_status', 'created_at', 'updated_at')
     list_filter = ('payment_status', 'order_status', 'created_at', 'updated_at')
     search_fields = ('user__username', 'billing_address__address_line1', 'shipping_address__address_line1')
     inlines = [OrderItemInline, PaymentInline]
