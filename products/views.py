@@ -10,6 +10,7 @@ from .serializers import ProductReviewSerializer, ProductSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Min, Max, Avg
 
 class ProductViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
     queryset = Product.objects.all().prefetch_related('variants', 'size_guides', 'images')
@@ -80,3 +81,24 @@ class ProductViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
             })
 
         return Response(color_data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='price-stats')
+    def get_price_stats(self, request):
+        """
+        Custom action to get minimum, maximum, and average price of all products.
+        Example request: GET /api/products/price-stats/
+        """
+        stats = Product.objects.aggregate(
+            min_price=Min('price'),
+            max_price=Max('price'),
+            avg_price=Avg('price')
+        )
+        
+        # Handle case where no products exist in the database
+        stats = {
+            'min_price': stats['min_price'] if stats['min_price'] is not None else 0,
+            'max_price': stats['max_price'] if stats['max_price'] is not None else 0,
+            'avg_price': stats['avg_price'] if stats['avg_price'] is not None else 0
+        }
+
+        return Response(stats, status=status.HTTP_200_OK)
