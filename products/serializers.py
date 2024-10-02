@@ -2,7 +2,7 @@ from rest_framework import serializers
 from collections import defaultdict
 
 from categories.models import Category
-from .models import Product, ProductVariant, ProductSizeGuide, ProductImage, Size
+from .models import Product, ProductReview, ProductVariant, ProductSizeGuide, ProductImage, Size
 from categories.serializers import CategorySerializer
 
 class SizeSerializer(serializers.ModelSerializer):
@@ -43,6 +43,14 @@ class GroupedColorSerializer(serializers.Serializer):
     image = serializers.ImageField()
     sizes = SizeQuantitySerializer(many=True)
 
+class ProductReviewSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')  # Display user's username
+    product = serializers.PrimaryKeyRelatedField(read_only=True) 
+    class Meta:
+        model = ProductReview
+        fields = ['id', 'user', 'product', 'rating', 'comment', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at']
+
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     variants = serializers.SerializerMethodField()
@@ -50,14 +58,27 @@ class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True)
     primary_image = serializers.SerializerMethodField()
     all_images = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()  # New field for average rating
+    reviews = ProductReviewSerializer(many=True, read_only=True)  # Include product reviews
+    total_reviews = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'short_description', 'description', 'slug', 'sku', 'category',
             'price', 'discount_price', 'primary_image','all_images', 'images', 'width',
-            'height', 'weight', 'depth', 'variants', 'size_guides'
+            'height', 'weight', 'depth', 'variants', 'size_guides', 'total_reviews', 'average_rating', 'reviews'
         ]
+
+    def get_total_reviews(self, obj):
+        return obj.reviews.count()  # Get the total number of reviews for the product
+
+
+    def get_average_rating(self, obj):
+        reviews = obj.reviews.all()
+        if reviews.exists():
+            return sum(review.rating for review in reviews) / reviews.count()
+        return None
 
     def get_variants(self, obj):
         request = self.context.get('request')

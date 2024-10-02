@@ -6,6 +6,7 @@ from common.model import BaseModel
 from tinymce.models import HTMLField
 from PIL import Image, UnidentifiedImageError
 from colorfield.fields import ColorField
+from django.conf import settings
 
 def validate_image(image):
     valid_image_formats = ['JPEG', 'JPG', 'PNG', 'GIF', 'BMP', 'TIFF', 'WEBP']
@@ -80,3 +81,16 @@ class ProductImage(BaseModel):
 
     def __str__(self):
         return f"Image for {self.product.name}"
+
+
+class ProductReview(BaseModel):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reviews')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.PositiveIntegerField()  # Rating between 1-5
+    comment = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ['user', 'product']  # Ensures a user can only review a product once
+
+    def __str__(self):
+        return f"Review by {self.user} for {self.product.name}"

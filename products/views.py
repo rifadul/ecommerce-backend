@@ -1,11 +1,14 @@
+from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, filters, status
 from common.mixins import SuccessMessageMixin
 from django_filters.rest_framework import DjangoFilterBackend
 from products.filters.filters import ProductFilter
 from .models import Product
-from .serializers import ProductSerializer
+from .serializers import ProductReviewSerializer, ProductSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 class ProductViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
     queryset = Product.objects.all().prefetch_related('variants', 'size_guides', 'images')
@@ -29,3 +32,31 @@ class ProductViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
             return Response({"message": "No products found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
         
         return Response({"message": "products deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=False, methods=['post'], url_path='add-review', permission_classes=[IsAuthenticated])
+    def add_review(self, request):
+        product_id = request.data.get('product_id')
+        product = get_object_or_404(Product, id=product_id)
+
+        # Copy request data to avoid modifying the original request
+        review_data = request.data.copy()
+        serializer = ProductReviewSerializer(data=review_data, context={'request': request})
+        
+        if serializer.is_valid():
+            try:
+                serializer.save(user=request.user, product=product)
+                return Response(
+                    {
+                        "message": "Review added successfully.",
+                        "data": serializer.data
+                    },
+                    status=status.HTTP_201_CREATED
+                )
+            except IntegrityError:
+                return Response(
+                    {
+                        "message": "You have already added a review for this product."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

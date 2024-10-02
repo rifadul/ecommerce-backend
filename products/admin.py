@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Product, ProductVariant, ProductSizeGuide, ProductImage, Size
+from .models import Product, ProductReview, ProductVariant, ProductSizeGuide, ProductImage, Size
 from .forms import ProductAdminForm, ProductVariantInlineForm, ProductSizeGuideInlineForm
 
 class ProductVariantInline(admin.TabularInline):
@@ -59,5 +59,11 @@ class ProductAdmin(admin.ModelAdmin):
 @admin.register(Size)
 class SizeAdmin(admin.ModelAdmin):
     list_display = ['size']
+
+class ProductReviewAdmin(admin.ModelAdmin):
+    list_display = ('user', 'product', 'rating', 'created_at')
+    search_fields = ('user__username', 'product__name')
+
+admin.site.register(ProductReview, ProductReviewAdmin)
 
 admin.site.register(Product, ProductAdmin)
