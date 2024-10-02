@@ -97,8 +97,8 @@ class ProductViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
         # Handle case where no products exist in the database
         stats = {
             'min_price': stats['min_price'] if stats['min_price'] is not None else 0,
-            'max_price': stats['max_price'] if stats['max_price'] is not None else 0,
-            'avg_price': stats['avg_price'] if stats['avg_price'] is not None else 0
+            'max_price': stats['max_price'] if stats['max_price'] is not None else 1000,
+            'avg_price': stats['avg_price'] if stats['avg_price'] is not None else 300
         }
 
         return Response(stats, status=status.HTTP_200_OK)
