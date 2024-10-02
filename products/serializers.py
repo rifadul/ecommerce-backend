@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from collections import defaultdict
-
 from categories.models import Category
 from .models import Product, ProductReview, ProductVariant, ProductSizeGuide, ProductImage, Size
 from categories.serializers import CategorySerializer

@@ -4,7 +4,8 @@ from rest_framework import viewsets, filters, status
 from common.mixins import SuccessMessageMixin
 from django_filters.rest_framework import DjangoFilterBackend
 from products.filters.filters import ProductFilter
-from .models import Product
+from utils.utils import ColorUtils
+from .models import Product, ProductVariant
 from .serializers import ProductReviewSerializer, ProductSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -60,3 +61,22 @@ class ProductViewSet(SuccessMessageMixin, viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='colors')
+    def get_all_colors(self, request):
+        """
+        Custom action to get all unique colors used in product variants.
+        Example request: GET /api/products/colors/
+        """
+        unique_colors = ProductVariant.objects.values_list('color', flat=True).distinct()
+
+        # Create a list of color data with both the color code and name
+        color_data = []
+        for color_code in unique_colors:
+            color_name = ColorUtils.get_color_name_from_hex(color_code)  # Use the utility function
+            color_data.append({
+                "code": color_code,
+                "name": color_name
+            })
+
+        return Response(color_data, status=status.HTTP_200_OK)
