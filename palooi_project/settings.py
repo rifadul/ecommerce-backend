@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'wishlists',
     'address',
     'orders',
+    'legal_policies',
 ]
 
 
