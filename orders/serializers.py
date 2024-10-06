@@ -30,7 +30,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id','order_number', 'active', 'coupon', 'subtotal', 'tax', 'shipping', 'price_before_discount', 'discount', 'total', 'is_coupon_applied', 'payment_method', 'payment_status', 'order_status','billing_address', 'shipping_address', 'shipping_method', 'items']
+        fields = ['id','order_number', 'active', 'coupon', 'subtotal', 'tax', 'shipping', 'price_before_discount', 'discount', 'total', 'is_coupon_applied', 'payment_method', 'payment_status', 'order_status','billing_address', 'shipping_address', 'shipping_method', 'items','created_at']
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
