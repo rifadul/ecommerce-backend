@@ -77,10 +77,20 @@ from rest_framework import status
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from rest_framework.exceptions import ValidationError, NotFound, APIException
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
 def custom_exception_handler(exc, context):
+    # Call the default exception handler to get the standard error response
     response = exception_handler(exc, context)
 
+    # Handle JWT token errors
+    if isinstance(exc, (TokenError, InvalidToken)):
+        return Response(
+            {"message": "Your session has expired or the token is invalid. Please log in again."},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    # Handle validation errors
     if isinstance(exc, ValidationError):
         custom_response_data = {"message": ""}
         for key, value in response.data.items():
@@ -90,18 +100,21 @@ def custom_exception_handler(exc, context):
                 custom_response_data["message"] = f"{key}: {value}"
         return Response(custom_response_data, status=status.HTTP_400_BAD_REQUEST)
 
+    # Handle 404 errors
     if isinstance(exc, (Http404, NotFound)):
         return Response(
             {"message": "The requested resource was not found."},
             status=status.HTTP_404_NOT_FOUND
         )
 
+    # Handle object not found errors
     if isinstance(exc, ObjectDoesNotExist):
         return Response(
             {"message": "The requested object does not exist."},
             status=status.HTTP_404_NOT_FOUND
         )
 
+    # Handle generic API exceptions
     if response is None:
         if isinstance(exc, APIException):
             return Response(
@@ -114,6 +127,7 @@ def custom_exception_handler(exc, context):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    # Customize the default error response
     custom_response_data = {"message": ""}
     for key, value in response.data.items():
         if isinstance(value, list):
@@ -123,6 +137,7 @@ def custom_exception_handler(exc, context):
     response.data = custom_response_data
 
     return response
+
 
 
 
