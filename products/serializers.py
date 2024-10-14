@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from collections import defaultdict
 from categories.models import Category
+from users.models import User
 from .models import Product, ProductReview, ProductVariant, ProductSizeGuide, ProductImage, Size
 from categories.serializers import CategorySerializer
 
@@ -42,8 +43,13 @@ class GroupedColorSerializer(serializers.Serializer):
     image = serializers.ImageField()
     sizes = SizeQuantitySerializer(many=True)
 
+class UserMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User  # Get the current user model.
+        fields = ['first_name', 'last_name']  # Include only these fields.
+
 class ProductReviewSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')  # Display user's username
+    user = UserMinimalSerializer(read_only=True)
     product = serializers.PrimaryKeyRelatedField(read_only=True) 
     class Meta:
         model = ProductReview
