@@ -2,6 +2,7 @@
 import django_filters
 from django.db.models import Q
 from products.models import Product, ProductVariant
+from categories.models import Category
 
 class ProductFilter(django_filters.FilterSet):
     min_price = django_filters.NumberFilter(field_name="price", lookup_expr='gte')
@@ -18,7 +19,18 @@ class ProductFilter(django_filters.FilterSet):
     def filter_category(self, queryset, name, value):
         # Split the category slugs by comma to filter by multiple categories
         slugs = value.split(',')
-        return queryset.filter(category__slug__in=slugs).distinct()
+        categories = Category.objects.filter(slug__in=slugs)
+        
+        # Use Q object to build the query for each category and its descendants
+        query = Q()
+        
+        for category in categories:
+            descendants = category.get_descendants()  # Get the descendants
+            descendants.append(category)  # Include the category itself
+            query |= Q(category__in=descendants)
+        
+        # Filter the queryset with the query
+        return queryset.filter(query).distinct()
     
     def filter_color(self, queryset, name, value):
         if value:

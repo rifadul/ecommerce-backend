@@ -1,7 +1,6 @@
 from django.db import models
 from django.utils.text import slugify
 from django.core.exceptions import ValidationError
-
 from common.model import BaseModel
 
 class Category(BaseModel):
@@ -25,5 +24,13 @@ class Category(BaseModel):
                     raise ValidationError("A category cannot be a subcategory of its own subcategory.")
                 ancestor = ancestor.parent
 
+    def get_descendants(self):
+        descendants = []
+        children = self.subcategories.all()
+        for child in children:
+            descendants.append(child)
+            descendants.extend(child.get_descendants())  # Recursively get all children
+        return descendants
+    
     def __str__(self):
         return self.name
