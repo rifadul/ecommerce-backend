@@ -1,4 +1,3 @@
-# coupons/models.py
 from django.db import models
 from django.utils import timezone
 from categories.models import Category

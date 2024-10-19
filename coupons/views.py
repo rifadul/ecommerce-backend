@@ -23,6 +23,11 @@ class CouponViewSet(SuccessMessageMixin,viewsets.ModelViewSet):
         code = request.data.get('code')
         try:
             coupon = Coupon.objects.get(code=code, active=True)
+
+            # Make sure the coupon is valid before applying it
+            if not coupon.is_valid():
+                return Response({"message": "Coupon is invalid or expired."}, status=status.HTTP_400_BAD_REQUEST)
+
             if cart.coupon is None:
                 cart.coupon = coupon
                 cart.calculate_totals()
