@@ -54,17 +54,25 @@ pip freeze > requirements.txt
 pip install -r requirements.txt
 ```
 
-### Creating env file with name .env
+### Configure Environment Variables
+Create a `.env` file in the root directory and add the following environment variables:
 
-```sh
-DJANGO_SECRET_KEY=your-secret-key
-DJANGO_DEBUG=True/False
-DB_NAME=database_name
-DB_USER=database_username
-DB_PASSWORD=database_passoword
+```env
+DJANGO_SECRET_KEY=django-insecure-rw-p-^dbo@)*vuu5)wghu5nt%j+39vf&30+!k@z$v5_oi(mdj5
+DJANGO_DEBUG=True
+DB_NAME=palooi_db
+DB_USER=palooi_admin
+DB_PASSWORD=123456
 DB_HOST=localhost
 DB_PORT=5432
-DJANGO_ALLOWED_HOSTS=localhost,your_domain
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,192.168.10.39
+EMAIL_HOST_USER=youremail@gmail.com
+EMAIL_HOST_PASSWORD=yourhostpassword
+CLIENT_ID=846693367049-alovjpulpma6ltn4b0iv3kuv8nqmklj7.apps.googleusercontent.com
+CLIENT_SECRET=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
+STRIPE_SECRET_KEY=sk_test_51PjSEoP56e6hXyY6HbldqvgPrNmpTZFruRa9WqsslFvkRg8X1f95NNwY62Y1mRhOfs3QIarLjybxnDq9qbO1GuTH00fbTmokFM
+STRIPE_PUBLIC_KEY=pk_test_51PjSEoP56e6hXyY6LhlZcNvlF8lG5H6aDpRGrMmYbSn78u2qD4LkHGZYeMFCdwiG3O4mV20cZTqUz4c8x3GC0cPL00gmH2BhTG
+STRIPE_WEBHOOK_SECRET=whsec_5e62a5c4a67c8645157a8d9b92f2e10c6e2916e547f865eead8bace92bc84077
 ```
 
 ### Configure Database
