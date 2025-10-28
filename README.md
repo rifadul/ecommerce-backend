@@ -1,4 +1,4 @@
-# Palooi Project
+# E-commerce Project
 
 This is a Django-based web application designed to manage roles, permissions, and modules. It includes features like authentication, role-based access control, and detailed module information.
 
@@ -58,26 +58,26 @@ pip install -r requirements.txt
 Create a `.env` file in the root directory and add the following environment variables:
 
 ```env
-DJANGO_SECRET_KEY=django-insecure-rw-p-^dbo@)*vuu5)wghu5nt%j+39vf&30+!k@z$v5_oi(mdj5
+DJANGO_SECRET_KEY=django_secret_key
 DJANGO_DEBUG=True
-DB_NAME=palooi_db
-DB_USER=palooi_admin
+DB_NAME=your_db
+DB_USER=your_admin
 DB_PASSWORD=123456
 DB_HOST=localhost
 DB_PORT=5432
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,192.168.10.39
 EMAIL_HOST_USER=youremail@gmail.com
 EMAIL_HOST_PASSWORD=yourhostpassword
-CLIENT_ID=846693367049-alovjpulpma6ltn4b0iv3kuv8nqmklj7.apps.googleusercontent.com
-CLIENT_SECRET=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
-STRIPE_SECRET_KEY=sk_test_51PjSEoP56e6hXyY6HbldqvgPrNmpTZFruRa9WqsslFvkRg8X1f95NNwY62Y1mRhOfs3QIarLjybxnDq9qbO1GuTH00fbTmokFM
-STRIPE_PUBLIC_KEY=pk_test_51PjSEoP56e6hXyY6LhlZcNvlF8lG5H6aDpRGrMmYbSn78u2qD4LkHGZYeMFCdwiG3O4mV20cZTqUz4c8x3GC0cPL00gmH2BhTG
-STRIPE_WEBHOOK_SECRET=whsec_5e62a5c4a67c8645157a8d9b92f2e10c6e2916e547f865eead8bace92bc84077
+CLIENT_ID=your_client_id
+CLIENT_SECRET=your_client_secret
+STRIPE_SECRET_KEY=your_stripe_secpet_key
+STRIPE_PUBLIC_KEY=your_stripe_secpet_public_key
+STRIPE_WEBHOOK_SECRET=your_stripe_secpet_webhook_secret
 ```
 
 ### Configure Database
 
-Update the DATABASES setting in palooi_project/settings.py with your database credentials.
+Could you update the DATABASES setting in project/settings.py with your database credentials?
 
 ### Run Migrations
 
@@ -130,7 +130,7 @@ Open your web browser and go to http://127.0.0.1:8000/ to access the application
 -   Update Role: PUT /api/roles/{id}/
 -   Partial Update Role: PATCH /api/roles/{id}/
 -   Delete Role: DELETE /api/roles/{id}/
--   Multiple Roles Delete : POST /api/roles/delete-multiple/?ids=id1,id2,id2...
+-   Multiple Roles Delete: POST /api/roles/delete-multiple/?ids=id1,id2, id3...
 
 ## Example Requests
 
