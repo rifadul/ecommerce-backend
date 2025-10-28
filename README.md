@@ -22,7 +22,7 @@ This is a Django-based web application designed to manage roles, permissions, an
 ### Clone the Repository
 
 ```sh
-git clone git@github.com:siam-zaag/palooi-backend.git
+git clone git@github.com:rifadul/ecommerce-backend.git
 cd palooi_project
 ```
 
