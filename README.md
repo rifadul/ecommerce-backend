@@ -4,7 +4,7 @@ This is a Django-based web application designed to manage roles, permissions, an
 
 ## Frontend Repository
 ```sh
-📦 [Frontend Repository](https://github.com/rifadul/single-vendor-ecommerce-front-end)
+https://github.com/rifadul/single-vendor-ecommerce-front-end
 ```
 
 ## Features
