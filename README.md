@@ -2,6 +2,11 @@
 
 This is a Django-based web application designed to manage roles, permissions, and modules. It includes features like authentication, role-based access control, and detailed module information.
 
+## Frontend Repository
+```sh
+📦 [Frontend Repository](https://github.com/rifadul/single-vendor-ecommerce-front-end)
+```
+
 ## Features
 
 -   Authentication for CRUD operations
